@@ -53,7 +53,7 @@ tile_images = {
         (128, 128)
     ),
     1: pygame.transform.scale(
-        pygame.image.load("img/Tile/tile_0000.png").convert_alpha(),
+        pygame.image.load("img/Tile/tile_0001.png").convert_alpha(),
         (128, 128)
     ),
     2: pygame.transform.scale(
