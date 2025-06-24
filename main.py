@@ -3,6 +3,13 @@ import sys
 import os
 
 pygame.init()
+pygame.mixer.init()
+
+shoot_sound = pygame.mixer.Sound("Music/shoot.mp3")
+hit_sound = pygame.mixer.Sound("Music/hit.mp3")
+move_sound = pygame.mixer.Sound("Music/move.mp3")
+move_sound.set_volume(0.3)
+
 
 WIDTH, HEIGHT = 1200, 700
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -212,6 +219,8 @@ while game:
                 bullet_x, bullet_y = get_bullet_spawn(player_rect, direction)
                 bullet = Bullet(bullet_x, bullet_y, direction)
                 bullets.append(bullet)
+                shoot_sound.play()
+
 
     screen.fill((0, 0, 0))
 
@@ -231,24 +240,28 @@ while game:
 
     else:
         keys = pygame.key.get_pressed()
+        moving = False
 
         if keys[pygame.K_UP]:
             if player_rect.top - tank_speed >= 0:
                 player_rect.y -= tank_speed
                 direction = "UP"
+                moving = True
         elif keys[pygame.K_DOWN]:
             if player_rect.bottom + tank_speed <= HEIGHT:
                 player_rect.y += tank_speed
                 direction = "DOWN"
+                moving = True
         elif keys[pygame.K_LEFT]:
             if player_rect.left - tank_speed >= 0:
                 player_rect.x -= tank_speed
                 direction = "LEFT"
+                moving = True
         elif keys[pygame.K_RIGHT]:
             if player_rect.right + tank_speed <= WIDTH:
                 player_rect.x += tank_speed
                 direction = "RIGHT"
-
+                moving = True                 
         
         if current_tile_map is not None:
             for y, row in enumerate(current_tile_map):
@@ -272,6 +285,7 @@ while game:
             bullet.update()
             if (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
                     bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
+                hit_sound.play()
                 bullets.remove(bullet)
             else:
                 bullet.draw(screen)
