@@ -11,6 +11,12 @@ move_sound = pygame.mixer.Sound("Music/move.mp3")
 move_sound.set_volume(0.3)
 
 
+shoot_sound = pygame.mixer.Sound("Music/shoot.mp3")
+hit_sound = pygame.mixer.Sound("Music/hit.mp3")
+move_sound = pygame.mixer.Sound("Music/move.mp3")
+move_sound.set_volume(0.3)
+
+
 WIDTH, HEIGHT = 1180, 700
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Battle_city")
@@ -242,6 +248,7 @@ while game:
         keys = pygame.key.get_pressed()
         moving = False
 
+
         if keys[pygame.K_UP] and player_rect.top - tank_speed >= 0:
             player_rect.y -= tank_speed
             direction = "UP"
@@ -266,6 +273,29 @@ while game:
             move_channel.stop()
 
 
+
+        if keys[pygame.K_UP]:
+            if player_rect.top - tank_speed >= 0:
+                player_rect.y -= tank_speed
+                direction = "UP"
+                moving = True
+        elif keys[pygame.K_DOWN]:
+            if player_rect.bottom + tank_speed <= HEIGHT:
+                player_rect.y += tank_speed
+                direction = "DOWN"
+                moving = True
+        elif keys[pygame.K_LEFT]:
+            if player_rect.left - tank_speed >= 0:
+                player_rect.x -= tank_speed
+                direction = "LEFT"
+                moving = True
+        elif keys[pygame.K_RIGHT]:
+            if player_rect.right + tank_speed <= WIDTH:
+                player_rect.x += tank_speed
+                direction = "RIGHT"
+                moving = True                 
+        
+
         if current_tile_map is not None:
             for y, row in enumerate(current_tile_map):
                 for x, tile_id in enumerate(row):
@@ -285,11 +315,14 @@ while game:
 
         for bullet in bullets[:]:
             bullet.update()
-            if bullet.rect.right < 0 or bullet.rect.left > WIDTH or bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT:
-                hit_sound.play()
-                bullets.remove(bullet)
-            else:
-                bullet.draw(screen)
+
+        if (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
+                    bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
+
+            hit_sound.play()
+            bullets.remove(bullet)
+        else:
+            bullet.draw(screen)
 
         screen.blit(rotate_tank, player_rect)
 
