@@ -54,6 +54,11 @@ for row in range(LEVELS_PER_ROW):
 play_rect = play_img.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
 skin_rect = skin_img.get_rect(center=(WIDTH // 2 - 250, HEIGHT // 2 - 50))
 setting_rect = setting_img.get_rect(center=(WIDTH // 2 + 250, HEIGHT // 2 - 50))
+background_img = pygame.transform.scale(pygame.image.load("img/background.jpg").convert(), (WIDTH, HEIGHT))
+level_select_bg = pygame.transform.scale(
+    pygame.image.load("img/level_select_bg.jpg").convert(),
+    (WIDTH, HEIGHT)
+)
 
 chest_img = pygame.transform.scale(chest_img, (
     int(chest_img.get_width() * 1.2),
@@ -235,12 +240,13 @@ while game:
     screen.fill((0, 0, 0))
 
     if menu:
+        screen.blit(background_img, (0, 0))
         screen.blit(play_img, play_rect)
         screen.blit(skin_img, skin_rect)
         screen.blit(setting_img, setting_rect)
         screen.blit(chest_img, chest_rect)
     elif show_level_select:
-        screen.fill(BG_COLOR)
+        screen.blit(level_select_bg, (0, 0))
         screen.blit(levels_img, (levels_img_x, levels_img_y))
         for rect in level_buttons:
             pygame.draw.rect(screen, (255, 255, 255), rect, 3)
