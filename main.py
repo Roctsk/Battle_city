@@ -11,10 +11,7 @@ move_sound = pygame.mixer.Sound("Music/move.mp3")
 move_sound.set_volume(0.3)
 
 
-shoot_sound = pygame.mixer.Sound("Music/shoot.mp3")
-hit_sound = pygame.mixer.Sound("Music/hit.mp3")
-move_sound = pygame.mixer.Sound("Music/move.mp3")
-move_sound.set_volume(0.3)
+clock = pygame.time.Clock()
 
 
 WIDTH, HEIGHT = 1180, 700
@@ -33,11 +30,15 @@ levels_img = pygame.image.load("img/LVl.png").convert_alpha()
 
 LEVEL_IMG_SIZE = 180
 LEVELS_PER_ROW = 3
-LEVEL_BUTTON_SIZE = LEVEL_IMG_SIZE // LEVELS_PER_ROW  
+LEVEL_BUTTON_SIZE = 100  
 
 
-levels_img_x = WIDTH // 3- LEVEL_IMG_SIZE // 3
-levels_img_y = HEIGHT // 3 - LEVEL_IMG_SIZE // 3
+
+total_grid_width = LEVEL_BUTTON_SIZE * LEVELS_PER_ROW
+total_grid_height = LEVEL_BUTTON_SIZE * LEVELS_PER_ROW
+levels_img_x = (WIDTH - total_grid_width) // 2
+levels_img_y = (HEIGHT - total_grid_height) // 2
+
 
 
 level_buttons = []
@@ -50,6 +51,12 @@ for row in range(LEVELS_PER_ROW):
             LEVEL_BUTTON_SIZE
         )
         level_buttons.append(rect)
+
+level_images = []
+for i in range(1, 10):
+    img = pygame.image.load(f"Img/{i}.jpg").convert()
+    img = pygame.transform.scale(img, (LEVEL_BUTTON_SIZE, LEVEL_BUTTON_SIZE))
+    level_images.append(img)
 
 play_rect = play_img.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
 skin_rect = skin_img.get_rect(center=(WIDTH // 2 - 250, HEIGHT // 2 - 50))
@@ -201,14 +208,16 @@ menu = True
 bullets = []
 move_channel = pygame.mixer.Channel(1)
 shoot_channel = pygame.mixer.Channel(2)
-
+mouse_pos = (0, 0)
 game = True
 while game:
+    clock.tick(60)  
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             game = False
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mouse_pos = event.pos
+
             if menu:
                 if play_rect.collidepoint(mouse_pos):
                     menu = False
@@ -219,24 +228,30 @@ while game:
                     pass
                 elif chest_rect.collidepoint(mouse_pos):
                     pass
+
             elif show_level_select:
                 for i, rect in enumerate(level_buttons):
                     if rect.collidepoint(mouse_pos):
-                        show_level_select = False
                         if i == 0:
                             current_tile_map = tile_map_1
                         elif i == 1:
                             current_tile_map = tile_map_2
                         else:
                             current_tile_map = tile_map
-                        menu = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE and not menu and not show_level_select:
-                bullet_x, bullet_y = get_bullet_spawn(player_rect, direction)
-                bullet = Bullet(bullet_x, bullet_y, direction)
-                bullets.append(bullet)
-                shoot_channel.play(shoot_sound)
+                        show_level_select = False
+                        break
 
+
+
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                bullet_x, bullet_y = get_bullet_spawn(player_rect, direction)
+                new_bullet = Bullet(bullet_x, bullet_y, direction)
+                bullets.append(new_bullet)
+                shoot_channel.play(shoot_sound)
+  
+
+        
     screen.fill((0, 0, 0))
 
     if menu:
@@ -248,13 +263,16 @@ while game:
     elif show_level_select:
         screen.blit(level_select_bg, (0, 0))
         screen.blit(levels_img, (levels_img_x, levels_img_y))
-        for rect in level_buttons:
-            pygame.draw.rect(screen, (255, 255, 255), rect, 3)
+        for i, rect in enumerate(level_buttons):
+            if i < len(level_images):
+                screen.blit(level_images[i], rect.topleft)
+                pygame.draw.rect(screen, (255, 255, 255), rect, 3)
+
     else:
         keys = pygame.key.get_pressed()
         moving = False
 
-
+        
         if keys[pygame.K_UP] and player_rect.top - tank_speed >= 0:
             player_rect.y -= tank_speed
             direction = "UP"
@@ -272,44 +290,22 @@ while game:
             direction = "RIGHT"
             moving = True
 
+        
         if moving:
             if not move_channel.get_busy():
                 move_channel.play(move_sound, loops=-1)
         else:
             move_channel.stop()
 
-
-
-        if keys[pygame.K_UP]:
-            if player_rect.top - tank_speed >= 0:
-                player_rect.y -= tank_speed
-                direction = "UP"
-                moving = True
-        elif keys[pygame.K_DOWN]:
-            if player_rect.bottom + tank_speed <= HEIGHT:
-                player_rect.y += tank_speed
-                direction = "DOWN"
-                moving = True
-        elif keys[pygame.K_LEFT]:
-            if player_rect.left - tank_speed >= 0:
-                player_rect.x -= tank_speed
-                direction = "LEFT"
-                moving = True
-        elif keys[pygame.K_RIGHT]:
-            if player_rect.right + tank_speed <= WIDTH:
-                player_rect.x += tank_speed
-                direction = "RIGHT"
-                moving = True                 
         
-
         if current_tile_map is not None:
             for y, row in enumerate(current_tile_map):
                 for x, tile_id in enumerate(row):
-
                     tile_img = tile_images.get(tile_id)
                     if tile_img:
                         screen.blit(tile_img, (x * TILE_SIZE, y * TILE_SIZE))
 
+        
         if direction == "UP":
             rotate_tank = player_tank
         elif direction == "DOWN":
@@ -319,17 +315,18 @@ while game:
         elif direction == "RIGHT":
             rotate_tank = pygame.transform.rotate(player_tank, -90)
 
+        
         for bullet in bullets[:]:
             bullet.update()
 
-        if (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
+            if (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
                     bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
+                hit_sound.play()
+                bullets.remove(bullet)
+            else:
+                bullet.draw(screen)
 
-            hit_sound.play()
-            bullets.remove(bullet)
-        else:
-            bullet.draw(screen)
-
+        
         screen.blit(rotate_tank, player_rect)
 
     pygame.display.flip()
