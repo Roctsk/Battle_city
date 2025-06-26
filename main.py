@@ -14,7 +14,7 @@ move_sound.set_volume(0.3)
 clock = pygame.time.Clock()
 
 
-WIDTH, HEIGHT = 1180, 700
+WIDTH, HEIGHT = 1180, 740
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Battle_city")
 
@@ -25,28 +25,32 @@ skin_img = pygame.image.load("img/button_skins.png").convert_alpha()
 setting_img = pygame.image.load("img/button_settings.png").convert_alpha()
 
 chest_img = pygame.image.load("img/chest.png").convert_alpha()
-levels_img = pygame.image.load("img/LVl.png").convert_alpha()
 
 
 LEVEL_IMG_SIZE = 180
 LEVELS_PER_ROW = 3
 LEVEL_BUTTON_SIZE = 100  
+BUTTON_SPACING = 20
 
 
 
-total_grid_width = LEVEL_BUTTON_SIZE * LEVELS_PER_ROW
-total_grid_height = LEVEL_BUTTON_SIZE * LEVELS_PER_ROW
+total_grid_width = LEVELS_PER_ROW *LEVEL_BUTTON_SIZE + (LEVELS_PER_ROW -1) * BUTTON_SPACING
+total_grid_height = LEVELS_PER_ROW *LEVEL_BUTTON_SIZE + (LEVELS_PER_ROW -1) * BUTTON_SPACING
 levels_img_x = (WIDTH - total_grid_width) // 2
 levels_img_y = (HEIGHT - total_grid_height) // 2
 
+
+exit_img = pygame.image.load("img/exit.png")
+exit_img = pygame.transform.scale(exit_img,(120,120))
+exit_rect = exit_img.get_rect(topright=(WIDTH - 5, 5))
 
 
 level_buttons = []
 for row in range(LEVELS_PER_ROW):
     for col in range(LEVELS_PER_ROW):
         rect = pygame.Rect(
-            levels_img_x + col * LEVEL_BUTTON_SIZE,
-            levels_img_y + row * LEVEL_BUTTON_SIZE,
+            levels_img_x + col * (LEVEL_BUTTON_SIZE + BUTTON_SPACING),
+            levels_img_y + row * (LEVEL_BUTTON_SIZE + BUTTON_SPACING),
             LEVEL_BUTTON_SIZE,
             LEVEL_BUTTON_SIZE
         )
@@ -54,7 +58,7 @@ for row in range(LEVELS_PER_ROW):
 
 level_images = []
 for i in range(1, 10):
-    img = pygame.image.load(f"Img/{i}.jpg").convert()
+    img = pygame.image.load(f"Img/{i}.png").convert_alpha()
     img = pygame.transform.scale(img, (LEVEL_BUTTON_SIZE, LEVEL_BUTTON_SIZE))
     level_images.append(img)
 
@@ -63,7 +67,7 @@ skin_rect = skin_img.get_rect(center=(WIDTH // 2 - 250, HEIGHT // 2 - 50))
 setting_rect = setting_img.get_rect(center=(WIDTH // 2 + 250, HEIGHT // 2 - 50))
 background_img = pygame.transform.scale(pygame.image.load("img/background.jpg").convert(), (WIDTH, HEIGHT))
 level_select_bg = pygame.transform.scale(
-    pygame.image.load("img/level_select_bg.jpg").convert(),
+    pygame.image.load("img/level_select_bg.png").convert(),
     (WIDTH, HEIGHT)
 )
 
@@ -84,11 +88,11 @@ tile_map_1 = [
     [0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0],
     [1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1],
     [1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0],
-    [0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1],
-    [0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1],
-    [1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 2, 2, 2, 2, 2, 2, 0, 1],
+    [0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 7, 1, 1],
+    [0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 8, 1, 1],
+    [1, 0, 0, 1, 0, 0, 1, 0, 6, 1, 2, 2, 2, 2, 2, 2, 1, 1],
     [0, 1, 1, 0, 0, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2,2],
-    [0, 0, 1, 0, 1, 1, 0, 2, 2, 2, 2, 3, 3, 4, 5, 2, 2, 2]
+    [0, 0, 1, 0, 1, 1, 1, 2, 2, 2, 2, 3, 4, 4, 5, 2, 2, 2]
 ]
 
 tile_map_2 = [
@@ -124,7 +128,7 @@ tile_map = [
 tile_images = {
     0: pygame.transform.scale(
         pygame.image.load("img/Tile/tile_0000.png").convert_alpha(),
-        (128, 128)
+        (100, 100)
     ),
     1: pygame.transform.scale(
         pygame.image.load("img/Tile/tile_0024.png").convert_alpha(),
@@ -146,18 +150,38 @@ tile_images = {
         pygame.image.load("img/Tile/tile_0006.png").convert_alpha(),
         (100, 100)
     ),
+    6: pygame.transform.scale(
+        pygame.image.load("img/Tile/tile_0263.png").convert_alpha(),
+        (100, 100)
+    ),
+    7: pygame.transform.scale(
+        pygame.image.load("img/Tile/tile_0263.png").convert_alpha(),
+        (100, 100)
+    ),
+    8: pygame.transform.scale(
+        pygame.image.load("img/Tile/tile_0287.png").convert_alpha(),
+        (100, 100)
+    ),
 }
 
 TILE_SIZE = 64
 
 player_tank = pygame.image.load("img/blue_tank.png").convert_alpha()
 player_tank = pygame.transform.scale(player_tank, (64, 64))
-
 player_rect = player_tank.get_rect(topleft=(TILE_SIZE, TILE_SIZE * 5))
+
+auto_tank = pygame.image.load("img/red_tank.png").convert_alpha()
+auto_tank = pygame.transform.scale(auto_tank, (64, 64))
+
+
+auto_rect = auto_tank.get_rect(topleft=(WIDTH - TILE_SIZE * 2, TILE_SIZE))
+auto_direction = "DOWN"
+
+
 
 direction = "UP"
 tank_speed = 5
-
+   
 bullet_img = pygame.image.load("img/bullet.png").convert_alpha()
 bullet_img = pygame.transform.scale(bullet_img, (16, 16))
 
@@ -206,6 +230,14 @@ def get_bullet_spawn(player_rect, direction):
 
 menu = True
 bullets = []
+
+auto_bullets = []
+auto_shoot_timer = 0
+ENEMY_SHOOT_INTERVAL = 120  
+
+player_health = 3
+auto_health = 3
+
 move_channel = pygame.mixer.Channel(1)
 shoot_channel = pygame.mixer.Channel(2)
 mouse_pos = (0, 0)
@@ -240,6 +272,12 @@ while game:
                             current_tile_map = tile_map
                         show_level_select = False
                         break
+            else:
+                if exit_rect.collidepoint(mouse_pos):
+                    menu = True
+                    current_tile_map = None
+                    show_level_select = False
+                    bullets.clear()
 
 
 
@@ -262,11 +300,10 @@ while game:
         screen.blit(chest_img, chest_rect)
     elif show_level_select:
         screen.blit(level_select_bg, (0, 0))
-        screen.blit(levels_img, (levels_img_x, levels_img_y))
         for i, rect in enumerate(level_buttons):
             if i < len(level_images):
                 screen.blit(level_images[i], rect.topleft)
-                pygame.draw.rect(screen, (255, 255, 255), rect, 3)
+            
 
     else:
         keys = pygame.key.get_pressed()
@@ -314,20 +351,77 @@ while game:
             rotate_tank = pygame.transform.rotate(player_tank, 90)
         elif direction == "RIGHT":
             rotate_tank = pygame.transform.rotate(player_tank, -90)
+        
+
+        if direction == "UP":
+            rotate_auto = auto_tank
+        elif direction == "DOWN":
+            rotate_auto = pygame.transform.rotate(auto_tank, 180)
+        elif direction == "LEFT":
+            rotate_auto = pygame.transform.rotate(auto_tank, 90)
+        elif direction == "RIGHT":
+            rotate_auto = pygame.transform.rotate(auto_tank, -90)
 
         
         for bullet in bullets[:]:
             bullet.update()
-
-            if (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
-                    bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
+            if bullet.rect.colliderect(auto_rect):
+                print("В ворога влучино")
+                bullets.remove(bullet)
                 hit_sound.play()
+                auto_health -= 1
+                print(f"Здоров'я гравця: {auto_health}")
+                if auto_health <= 0:
+                            print(" Гравець програв!")
+                            game = False
+            elif (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
+                    bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
                 bullets.remove(bullet)
             else:
                 bullet.draw(screen)
 
-        
+        for bullet in auto_bullets[:]:
+            bullet.update()
+            if bullet.rect.colliderect(player_rect):
+                print("Гравець підбитий ворогом!")
+                auto_bullets.remove(bullet)
+                hit_sound.play()
+                player_health -= 1
+                print(f"Здоров'я гравця: {player_health}")
+                if player_health <= 0:
+                    print(" Гравець програв!")
+                    game = False
+            elif (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
+                bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
+                auto_bullets.remove(bullet)
+            else:
+                bullet.draw(screen)
+
+
+        screen.blit(exit_img,exit_rect)
         screen.blit(rotate_tank, player_rect)
+        screen.blit(rotate_auto,auto_rect)
+
+        if auto_rect.y < player_rect.y:
+            auto_rect.y += 1
+            auto_direction = "DOWN"
+        elif auto_rect.y > player_rect.y:
+            auto_rect.y -= 1
+            auto_direction = "UP"
+        elif auto_rect.x < player_rect.x:
+            auto_rect.x += 1
+            auto_direction = "RIGHT"
+        elif auto_rect.x > player_rect.x:
+            auto_rect.x -= 1
+            auto_direction = "LEFT"
+
+
+        auto_shoot_timer += 1
+        if auto_shoot_timer >= ENEMY_SHOOT_INTERVAL:
+            bullet_x, bullet_y = get_bullet_spawn(auto_rect, auto_direction)
+            auto_bullets.append(Bullet(bullet_x, bullet_y, auto_direction))
+            shoot_channel.play(shoot_sound)
+            auto_shoot_timer = 0
 
     pygame.display.flip()
 
