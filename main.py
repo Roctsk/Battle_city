@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+from maps import tile_maps
 
 pygame.init()
 pygame.mixer.init()
@@ -81,49 +82,6 @@ chest_rect.bottomleft = (5, HEIGHT - 20)
 show_level_select = False
 current_tile_map = None  
 
-tile_map_1 = [
-    [1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0],
-    [1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1],
-    [0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1],
-    [0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0],
-    [1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1],
-    [1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0],
-    [0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 7, 1, 1],
-    [0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 8, 1, 1],
-    [1, 0, 0, 1, 0, 0, 1, 0, 6, 1, 2, 2, 2, 2, 2, 2, 1, 1],
-    [0, 1, 1, 0, 0, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2,2],
-    [0, 0, 1, 0, 1, 1, 1, 2, 2, 2, 2, 3, 4, 4, 5, 2, 2, 2]
-]
-
-tile_map_2 = [
-    [0, 0, 1, 1, 1, 0, 0, 2, 2, 0, 0, 1, 1, 1, 0],
-    [1, 0, 0, 0, 0, 2, 2, 0, 0, 1, 0, 0, 0, 1, 1],
-    [1, 1, 0, 0, 2, 0, 0, 0, 1, 1, 0, 0, 2, 0, 0],
-    [0, 0, 0, 1, 1, 0, 2, 2, 0, 0, 1, 1, 0, 0, 0],
-    [2, 2, 0, 0, 0, 1, 1, 0, 0, 2, 2, 0, 0, 1, 1],
-    [0, 0, 2, 2, 0, 0, 0, 1, 1, 0, 0, 2, 2, 0, 0],
-    [1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 2, 2],
-    [0, 0, 1, 1, 0, 0, 2, 2, 0, 0, 0, 1, 1, 0, 0],
-    [1, 1, 0, 0, 2, 2, 0, 0, 1, 1, 0, 0, 2, 2, 0],
-    [0, 0, 2, 2, 0, 0, 1, 1, 0, 0, 2, 2, 0, 0, 1],
-    [1, 1, 0, 0, 1, 1, 0, 0, 2, 2, 0, 0, 1, 1, 0],
-    [0, 0, 1, 1, 0, 0, 2, 2, 0, 0, 1, 1, 0, 0, 2]
-]
-
-tile_map = [
-    [1, 1, 1, 0, 0, 2, 2, 0, 0, 1, 2, 0, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 2, 12, 0, 0, 1, 1],
-    [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 1, 1],
-    [0, 2, 2, 0, 1, 1, 0, 0, 0, 0, 2, 0, 0, 1, 1],
-    [1, 1, 1, 0, 0, 2, 2, 0, 0, 1, 2, 0, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 1, 1],
-    [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 1, 1],
-    [0, 2, 2, 0, 1, 1, 0, 0, 0, 0, 2, 0, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 2, 12, 0, 0, 1, 1],
-    [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 1, 1],
-    [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 1, 1],
-    [0, 2, 2, 0, 1, 1, 0, 0, 0, 0, 2, 0, 0, 1, 1]
-]
 
 
 tile_images = {
@@ -229,6 +187,14 @@ def get_bullet_spawn(player_rect, direction):
         return player_rect.right + offset, player_rect.centery
 
 
+
+
+
+
+
+
+current_level_index = 0
+
 menu = True
 bullets = []
 
@@ -242,8 +208,10 @@ auto_health = 3
 move_channel = pygame.mixer.Channel(1)
 shoot_channel = pygame.mixer.Channel(2)
 mouse_pos = (0, 0)
+load_level = False  # <- Додай це перед while game:
+
 game = True
-while game:
+while game: 
     clock.tick(60)  
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -265,14 +233,16 @@ while game:
             elif show_level_select:
                 for i, rect in enumerate(level_buttons):
                     if rect.collidepoint(mouse_pos):
-                        if i == 0:
-                            current_tile_map = tile_map_1
-                        elif i == 1:
-                            current_tile_map = tile_map_2
+                        if 0 <= i < len(tile_maps):
+                            current_level_index = i
+                            current_tile_map = tile_maps[current_level_index]
+                            show_level_select = False
+                            menu = False
+                            print(f"✅ Завантажено карту рівня {current_level_index + 1}")
                         else:
-                            current_tile_map = tile_map
-                        show_level_select = False
-                        break
+                            print(f"❌ Рівень {i + 1} не знайдено")
+
+
             else:
                 if exit_rect.collidepoint(mouse_pos):
                     menu = True
@@ -374,25 +344,44 @@ while game:
                 print(f"Здоров'я гравця: {auto_health}")
                 if auto_health <= 0:
                  print("Ворог знищений!")
-    current_level_index += 1
-    if current_level_index < len(tile_maps):
-        current_tile_map = tile_maps[current_level_index]
-        auto_health = 3
-        player_health = 3
-        auto_rect.topleft = (WIDTH - TILE_SIZE * 2, TILE_SIZE)
-        player_rect.topleft = (TILE_SIZE, TILE_SIZE * 5)
-        bullets.clear()
-        auto_bullets.clear()
-        print(f"Переходимо до рівня {current_level_index + 1}")
-    else:
-        print("Гру пройдено!")
-        game = False
+            elif (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
+                bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
+                bullets.remove(bullet)
+            else:
+                bullet.draw(screen)
 
-        elif (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
-                    bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
-        bullets.remove(bullet)
-else:
-        bullet.draw(screen)
+    
+    # Якщо потрібно завантажити новий рівень
+        if load_level:
+            if current_level_index < len(tile_maps):
+                current_tile_map = tile_maps[current_level_index]
+                auto_health = 3
+                player_health = 3
+                auto_rect.topleft = (WIDTH - TILE_SIZE * 2, TILE_SIZE)
+                player_rect.topleft = (TILE_SIZE, TILE_SIZE * 5)
+                bullets.clear()
+                auto_bullets.clear()
+                print(f"✅ Переходимо до рівня {current_level_index + 1}")
+                load_level = False
+            else:
+                print("🎉 Гру пройдено!")
+                game = False
+                continue
+
+
+    # Далі вся логіка — рух, стрільба, відображення
+
+        if auto_health <= 0:
+            print("Ворог знищений!")
+            current_level_index += 1
+            load_level = True  # сигнал для завантаження нового рівня
+
+        
+
+    
+
+        
+        
 
         for bullet in auto_bullets[:]:
             bullet.update()
@@ -439,5 +428,6 @@ else:
 
     pygame.display.flip()
 
+ 
 pygame.quit()
 sys.exit()
