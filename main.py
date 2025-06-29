@@ -125,6 +125,7 @@ tile_map = [
     [0, 2, 2, 0, 1, 1, 0, 0, 0, 0, 2, 0, 0, 1, 1]
 ]
 
+
 tile_images = {
     0: pygame.transform.scale(
         pygame.image.load("img/Tile/tile_0000.png").convert_alpha(),
@@ -372,13 +373,26 @@ while game:
                 auto_health -= 1
                 print(f"Здоров'я гравця: {auto_health}")
                 if auto_health <= 0:
-                            print(" Гравець програв!")
-                            game = False
-            elif (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
+                 print("Ворог знищений!")
+    current_level_index += 1
+    if current_level_index < len(tile_maps):
+        current_tile_map = tile_maps[current_level_index]
+        auto_health = 3
+        player_health = 3
+        auto_rect.topleft = (WIDTH - TILE_SIZE * 2, TILE_SIZE)
+        player_rect.topleft = (TILE_SIZE, TILE_SIZE * 5)
+        bullets.clear()
+        auto_bullets.clear()
+        print(f"Переходимо до рівня {current_level_index + 1}")
+    else:
+        print("Гру пройдено!")
+        game = False
+
+        elif (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
                     bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
-                bullets.remove(bullet)
-            else:
-                bullet.draw(screen)
+        bullets.remove(bullet)
+else:
+        bullet.draw(screen)
 
         for bullet in auto_bullets[:]:
             bullet.update()
