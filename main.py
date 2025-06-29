@@ -185,14 +185,7 @@ def get_bullet_spawn(player_rect, direction):
         return player_rect.left - offset, player_rect.centery
     elif direction == "RIGHT":
         return player_rect.right + offset, player_rect.centery
-
-
-
-
-
-
-
-
+    
 current_level_index = 0
 
 menu = True
@@ -208,7 +201,7 @@ auto_health = 3
 move_channel = pygame.mixer.Channel(1)
 shoot_channel = pygame.mixer.Channel(2)
 mouse_pos = (0, 0)
-load_level = False  # <- Додай це перед while game:
+load_level = False  
 
 game = True
 while game: 
@@ -238,11 +231,9 @@ while game:
                             current_tile_map = tile_maps[current_level_index]
                             show_level_select = False
                             menu = False
-                            print(f"✅ Завантажено карту рівня {current_level_index + 1}")
+                            print(f" Завантажено карту рівня {current_level_index + 1}")
                         else:
-                            print(f"❌ Рівень {i + 1} не знайдено")
-
-
+                            print(f" Рівень {i + 1} не знайдено")
             else:
                 if exit_rect.collidepoint(mouse_pos):
                     menu = True
@@ -258,10 +249,7 @@ while game:
                 new_bullet = Bullet(bullet_x, bullet_y, direction)
                 bullets.append(new_bullet)
                 shoot_channel.play(shoot_sound)
-  
 
-        
-    screen.fill((0, 0, 0))
 
     if menu:
         screen.blit(background_img, (0, 0))
@@ -274,13 +262,13 @@ while game:
         for i, rect in enumerate(level_buttons):
             if i < len(level_images):
                 screen.blit(level_images[i], rect.topleft)
-            
+
 
     else:
         keys = pygame.key.get_pressed()
         moving = False
 
-        
+
         if keys[pygame.K_UP] and player_rect.top - tank_speed >= 0:
             player_rect.y -= tank_speed
             direction = "UP"
@@ -305,7 +293,6 @@ while game:
         else:
             move_channel.stop()
 
-        
         if current_tile_map is not None:
             for y, row in enumerate(current_tile_map):
                 for x, tile_id in enumerate(row):
@@ -313,7 +300,6 @@ while game:
                     if tile_img:
                         screen.blit(tile_img, (x * TILE_SIZE, y * TILE_SIZE))
 
-        
         if direction == "UP":
             rotate_tank = player_tank
         elif direction == "DOWN":
@@ -322,7 +308,7 @@ while game:
             rotate_tank = pygame.transform.rotate(player_tank, 90)
         elif direction == "RIGHT":
             rotate_tank = pygame.transform.rotate(player_tank, -90)
-        
+
 
         if direction == "UP":
             rotate_auto = auto_tank
@@ -333,7 +319,6 @@ while game:
         elif direction == "RIGHT":
             rotate_auto = pygame.transform.rotate(auto_tank, -90)
 
-        
         for bullet in bullets[:]:
             bullet.update()
             if bullet.rect.colliderect(auto_rect):
@@ -350,8 +335,6 @@ while game:
             else:
                 bullet.draw(screen)
 
-    
-    # Якщо потрібно завантажити новий рівень
         if load_level:
             if current_level_index < len(tile_maps):
                 current_tile_map = tile_maps[current_level_index]
@@ -369,20 +352,11 @@ while game:
                 continue
 
 
-    # Далі вся логіка — рух, стрільба, відображення
 
         if auto_health <= 0:
             print("Ворог знищений!")
             current_level_index += 1
-            load_level = True  # сигнал для завантаження нового рівня
-
-        
-
-    
-
-        
-        
-
+            load_level = True  
         for bullet in auto_bullets[:]:
             bullet.update()
             if bullet.rect.colliderect(player_rect):
@@ -428,6 +402,5 @@ while game:
 
     pygame.display.flip()
 
- 
 pygame.quit()
 sys.exit()
