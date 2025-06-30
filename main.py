@@ -2,6 +2,25 @@ import pygame
 import sys
 import os
 from maps import tile_maps
+import random
+
+import json
+import os
+
+SAVE_FILE = "save_data.json"
+
+def save_crystals(count):
+    data = {"crystals": count}
+    with open(SAVE_FILE, "w") as f:
+        json.dump(data, f)
+
+def load_crystals():
+    if os.path.exists(SAVE_FILE):
+        with open(SAVE_FILE, "r") as f:
+            data = json.load(f)
+            return data.get("crystals", 0)
+    return 0
+
 
 pygame.init()
 pygame.mixer.init()
@@ -9,13 +28,23 @@ pygame.mixer.init()
 shoot_sound = pygame.mixer.Sound("Music/shoot.mp3")
 hit_sound = pygame.mixer.Sound("Music/hit.mp3")
 move_sound = pygame.mixer.Sound("Music/move.mp3")
+
+pygame.mixer.music.load("Music/fon.mp3")
+pygame.mixer.music.set_volume(0.5)
 move_sound.set_volume(0.3)
 
+crystal_count = load_crystals()
+chest_open_sound = pygame.mixer.Sound("Music/open_chest.mp3")
 
 clock = pygame.time.Clock()
 
 
 WIDTH, HEIGHT = 1180, 740
+
+small_font = pygame.font.SysFont("arial", 28)
+back_text = small_font.render("← Назад", True, (255, 255, 255))
+back_rect = back_text.get_rect(topleft=(50, HEIGHT - 70))
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Battle_city")
 
@@ -186,6 +215,31 @@ def get_bullet_spawn(player_rect, direction):
     elif direction == "RIGHT":
         return player_rect.right + offset, player_rect.centery
     
+
+skin_images = [
+    pygame.image.load("img/skin_1.png").convert_alpha(),
+    pygame.image.load("img/skin_2.png").convert_alpha(),
+    pygame.image.load("img/skin_3.png").convert_alpha(),
+
+]
+
+skin_images = [pygame.transform.scale(img, (300, 300)) for img in skin_images]
+
+skin_prices = [100, 200, 300] 
+
+crystal_img = pygame.image.load("img/almaz.png").convert_alpha()
+crystal_img = pygame.transform.scale(crystal_img, (40, 32))
+
+skin_rects = []
+total_width = len(skin_images) * 180 + (len(skin_images) - 1) * 100
+start_x = WIDTH // 2 - 180 - total_width // 2
+y_pos = HEIGHT // 2 - 200
+
+for i, img in enumerate(skin_images):
+    rect = img.get_rect(topleft=(start_x + i * (300 + 100), y_pos))
+    skin_rects.append(rect)
+
+
 current_level_index = 0
 
 menu = True
@@ -202,6 +256,16 @@ move_channel = pygame.mixer.Channel(1)
 shoot_channel = pygame.mixer.Channel(2)
 mouse_pos = (0, 0)
 load_level = False  
+setting_menu = False
+
+volume = 0.5
+slider_dragging = False
+slider_x = 300
+slider_y = 200
+slider_width = 400
+slider_height = 10
+
+skin_menu = False
 
 game = True
 while game: 
@@ -212,16 +276,41 @@ while game:
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mouse_pos = event.pos
 
+            if setting_menu and back_rect.collidepoint(mouse_pos):
+                setting_menu = False
+                menu = True
+            if setting_menu:
+                slider_dragging = False
+
+            if setting_menu and slider_dragging:
+                rel_x = mouse_pos[0] - slider_x
+                rel_x = max(0, min(rel_x, slider_width)) 
+                volume = rel_x / slider_width
+                pygame.mixer.music.set_volume(volume)
             if menu:
+
                 if play_rect.collidepoint(mouse_pos):
+                    pygame.mixer.music.stop()
                     menu = False
                     show_level_select = True
-                elif skin_rect.collidepoint(mouse_pos):
-                    pass
                 elif setting_rect.collidepoint(mouse_pos):
-                    pass
+                    menu = False
+                    setting_menu = True
+                elif skin_rect.collidepoint(mouse_pos):
+                    menu = False
+                    skin_menu = True 
                 elif chest_rect.collidepoint(mouse_pos):
-                    pass
+                    save_crystals(crystal_count)
+                    chest_open_sound.play()
+                    gained_crystals = random.randint(1, 10) 
+                    crystal_count += gained_crystals
+                    print(f"Випало {gained_crystals} кристалів! Всього: {crystal_count}")
+                elif back_rect.collidepoint(mouse_pos):
+                    setting_menu = False
+                    menu = True
+            elif back_rect.collidepoint(mouse_pos):
+                    skin_menu = False
+                    menu = True
 
             elif show_level_select:
                 for i, rect in enumerate(level_buttons):
@@ -234,6 +323,7 @@ while game:
                             print(f" Завантажено карту рівня {current_level_index + 1}")
                         else:
                             print(f" Рівень {i + 1} не знайдено")
+
             else:
                 if exit_rect.collidepoint(mouse_pos):
                     menu = True
@@ -257,11 +347,71 @@ while game:
         screen.blit(skin_img, skin_rect)
         screen.blit(setting_img, setting_rect)
         screen.blit(chest_img, chest_rect)
+        screen.blit(crystal_img, (10, 10))
+
+        font = pygame.font.SysFont("arial", 28)
+        crystal_text = font.render(str(crystal_count), True, (255, 255, 255))
+        screen.blit(crystal_text, (10 + crystal_img.get_width() + 5, 12))
+        if not pygame.mixer.music.get_busy():
+            pygame.mixer.music.load("Music/fon.mp3")
+            pygame.mixer.music.set_volume(0.5)
+            pygame.mixer.music.play(-1)
+
+    elif setting_menu:
+        screen.fill((50, 50, 70))  
+
+        font = pygame.font.SysFont("arial", 36)
+        small_font = pygame.font.SysFont("arial", 28)
+
+        settings_text = font.render("Налаштування", True, (255, 255, 255))
+        screen.blit(settings_text, (WIDTH // 2 - settings_text.get_width() // 2, 50))
+
+        pygame.draw.rect(screen, (200, 200, 200), (slider_x, slider_y, slider_width, slider_height))
+        
+        knob_x = slider_x + int(volume * slider_width)
+        pygame.draw.circle(screen, (255, 0, 0), (knob_x, slider_y + slider_height // 2), 12)
+
+        volume_text = small_font.render("Гучність музики", True, (255, 255, 255))
+        screen.blit(volume_text, (slider_x, slider_y - 40))
+
+        back_text = small_font.render("← Назад", True, (255, 255, 255))
+        back_rect = back_text.get_rect(topleft=(50, HEIGHT - 70))
+        screen.blit(back_text, back_rect)
+
+        lang_text = small_font.render("Мова: [UA] [EN] [PL]", True, (200, 200, 200))
+        screen.blit(lang_text, (slider_x, slider_y + 80))
     elif show_level_select:
         screen.blit(level_select_bg, (0, 0))
         for i, rect in enumerate(level_buttons):
             if i < len(level_images):
                 screen.blit(level_images[i], rect.topleft)
+    elif skin_menu:
+        screen.fill((40,40,60))
+        
+        title = pygame.font.SysFont("arial", 48).render("Скіни", True, (255, 215, 0))
+        screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 50))
+
+
+        for i, img in enumerate(skin_images):
+
+            pygame.draw.rect(screen, (0, 200, 255), skin_rects[i].inflate(20, 20), border_radius=10)
+
+            screen.blit(img, skin_rects[i])
+
+            font = pygame.font.SysFont("arial", 26)
+            price = skin_prices[i]
+            price_text = font.render(str(price), True, (255, 255, 0))
+
+            text_x = skin_rects[i].centerx - 20
+            text_y = skin_rects[i].bottom + 10
+
+            crystal_x = text_x + price_text.get_width() + 10
+            crystal_y = text_y - 5
+
+            screen.blit(price_text, (text_x, text_y))
+            screen.blit(crystal_img, (crystal_x, crystal_y))
+
+        screen.blit(back_text,back_rect)
 
 
     else:
