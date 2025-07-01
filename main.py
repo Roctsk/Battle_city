@@ -9,17 +9,28 @@ import os
 
 SAVE_FILE = "save_data.json"
 
-def save_crystals(count):
-    data = {"crystals": count}
+def save_progress(crystals, unlocked_level, selected_skin_id, purchased_skins):
+    data = {
+        "crystals": crystals,
+        "max_level_unlocked": unlocked_level,
+        "selected_skin_id": selected_skin_id,
+        "purchased_skins": purchased_skins
+    }
     with open(SAVE_FILE, "w") as f:
         json.dump(data, f)
 
-def load_crystals():
+def load_progress():
     if os.path.exists(SAVE_FILE):
         with open(SAVE_FILE, "r") as f:
             data = json.load(f)
-            return data.get("crystals", 0)
-    return 0
+            return (
+                data.get("crystals", 0),
+                data.get("max_level_unlocked", 1),
+                data.get("selected_skin_id", 0),
+                data.get("purchased_skins", [0])  # перший скин куплений за замовчуванням
+            )
+    return 0, 1, 0, [0]
+
 
 
 pygame.init()
@@ -33,7 +44,7 @@ pygame.mixer.music.load("Music/fon.mp3")
 pygame.mixer.music.set_volume(0.5)
 move_sound.set_volume(0.3)
 
-crystal_count = load_crystals()
+crystal_count, max_level_unlocked, selected_skin_id, purchased_skins = load_progress()
 chest_open_sound = pygame.mixer.Sound("Music/open_chest.mp3")
 
 clock = pygame.time.Clock()
@@ -154,8 +165,10 @@ tile_images = {
 
 TILE_SIZE = 64
 
-player_tank = pygame.image.load("img/blue_tank.png").convert_alpha()
+skin_paths = ["img/skin_1.png", "img/skin_2.png", "img/skin_3.png"]
+player_tank = pygame.image.load(skin_paths[selected_skin_id]).convert_alpha()
 player_tank = pygame.transform.scale(player_tank, (64, 64))
+
 player_rect = player_tank.get_rect(topleft=(TILE_SIZE, TILE_SIZE * 5))
 
 auto_tank = pygame.image.load("img/red_tank.png").convert_alpha()
@@ -252,11 +265,16 @@ ENEMY_SHOOT_INTERVAL = 120
 player_health = 3
 auto_health = 3
 
+
+
 move_channel = pygame.mixer.Channel(1)
 shoot_channel = pygame.mixer.Channel(2)
 mouse_pos = (0, 0)
-load_level = False  
+load_level = False
 setting_menu = False
+
+
+
 
 volume = 0.5
 slider_dragging = False
@@ -266,7 +284,8 @@ slider_width = 400
 slider_height = 10
 
 skin_menu = False
-
+level_locked_message = ""
+message_timer = 0
 game = True
 while game: 
     clock.tick(60)  
@@ -276,17 +295,23 @@ while game:
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mouse_pos = event.pos
 
-            if setting_menu and back_rect.collidepoint(mouse_pos):
-                setting_menu = False
-                menu = True
-            if setting_menu:
-                slider_dragging = False
+            if skin_menu:
+                if back_rect.collidepoint(mouse_pos):
+                    skin_menu = False
+                    menu = True
+                else:
+                    for i, rect in enumerate(skin_rects):
+                        if rect.collidepoint(mouse_pos):
+                            if i in purchased_skins:
+                                selected_skin_id = i
+                                save_progress(crystal_count, max_level_unlocked, selected_skin_id, purchased_skins)
+                            else:
+                                if crystal_count >= skin_prices[i]:
+                                    crystal_count -= skin_prices[i]
+                                    purchased_skins.append(i)
+                                    selected_skin_id = i
+                                    save_progress(crystal_count, max_level_unlocked, selected_skin_id, purchased_skins)
 
-            if setting_menu and slider_dragging:
-                rel_x = mouse_pos[0] - slider_x
-                rel_x = max(0, min(rel_x, slider_width)) 
-                volume = rel_x / slider_width
-                pygame.mixer.music.set_volume(volume)
             if menu:
 
                 if play_rect.collidepoint(mouse_pos):
@@ -300,10 +325,10 @@ while game:
                     menu = False
                     skin_menu = True 
                 elif chest_rect.collidepoint(mouse_pos):
-                    save_crystals(crystal_count)
                     chest_open_sound.play()
                     gained_crystals = random.randint(1, 10) 
                     crystal_count += gained_crystals
+                    save_progress(crystal_count, max_level_unlocked)
                     print(f"Випало {gained_crystals} кристалів! Всього: {crystal_count}")
                 elif back_rect.collidepoint(mouse_pos):
                     setting_menu = False
@@ -313,17 +338,25 @@ while game:
                     menu = True
 
             elif show_level_select:
+                if level_locked_message:
+                    now = pygame.time.get_ticks()
+                    if now - message_timer < 2000:  # 2 секунди
+                        font = pygame.font.SysFont("arial", 32)
+                        msg = font.render(level_locked_message, True, (255, 0, 0))
+                        screen.blit(msg, (WIDTH // 2 - msg.get_width() // 2, HEIGHT - 80))
+                    else:
+                        level_locked_message = ""
                 for i, rect in enumerate(level_buttons):
                     if rect.collidepoint(mouse_pos):
-                        if 0 <= i < len(tile_maps):
+                        if i + 1 > max_level_unlocked:
+                            level_locked_message = "Пройди попередній рівень!"
+                            message_timer = pygame.time.get_ticks()
+                        elif 0 <= i < len(tile_maps):
                             current_level_index = i
                             current_tile_map = tile_maps[current_level_index]
                             show_level_select = False
                             menu = False
-                            print(f" Завантажено карту рівня {current_level_index + 1}")
-                        else:
-                            print(f" Рівень {i + 1} не знайдено")
-
+                            print(f"Завантажено карту рівня {current_level_index + 1}")
             else:
                 if exit_rect.collidepoint(mouse_pos):
                     menu = True
@@ -386,38 +419,34 @@ while game:
             if i < len(level_images):
                 screen.blit(level_images[i], rect.topleft)
     elif skin_menu:
-        screen.fill((40,40,60))
-        
+        screen.fill((40, 40, 60))
         title = pygame.font.SysFont("arial", 48).render("Скіни", True, (255, 215, 0))
         screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 50))
 
+        for i, rect in enumerate(skin_rects):
+            screen.blit(skin_images[i], rect)
 
-        for i, img in enumerate(skin_images):
+            # Клік миші буде перевірятимо у подіях, а не тут
+            # Але можна показувати кнопку (купити/обрати)
+            status_font = pygame.font.SysFont("arial", 22)
+            if i in purchased_skins:
+                if selected_skin_id == i:
+                    status_text = status_font.render("Обрано", True, (0, 255, 0))
+                else:
+                    status_text = status_font.render("Обрати", True, (255, 255, 255))
+            else:
+                status_text = status_font.render(f"Купити ({skin_prices[i]})", True, (255, 100, 100))
+            screen.blit(status_text, (rect.centerx - status_text.get_width() // 2, rect.bottom + 10))
 
-            pygame.draw.rect(screen, (0, 200, 255), skin_rects[i].inflate(20, 20), border_radius=10)
-
-            screen.blit(img, skin_rects[i])
-
-            font = pygame.font.SysFont("arial", 26)
-            price = skin_prices[i]
-            price_text = font.render(str(price), True, (255, 255, 0))
-
-            text_x = skin_rects[i].centerx - 20
-            text_y = skin_rects[i].bottom + 10
-
-            crystal_x = text_x + price_text.get_width() + 10
-            crystal_y = text_y - 5
-
-            screen.blit(price_text, (text_x, text_y))
-            screen.blit(crystal_img, (crystal_x, crystal_y))
-
-        screen.blit(back_text,back_rect)
+        # кнопка Назад
+        back_text = small_font.render("← Назад", True, (255, 255, 255))
+        back_rect = back_text.get_rect(topleft=(50, HEIGHT - 70))
+        screen.blit(back_text, back_rect)
 
 
-    else:
+
         keys = pygame.key.get_pressed()
         moving = False
-
 
         if keys[pygame.K_UP] and player_rect.top - tank_speed >= 0:
             player_rect.y -= tank_speed
@@ -435,6 +464,7 @@ while game:
             player_rect.x += tank_speed
             direction = "RIGHT"
             moving = True
+
 
         
         if moving:
@@ -460,15 +490,14 @@ while game:
             rotate_tank = pygame.transform.rotate(player_tank, -90)
 
 
-        if direction == "UP":
+        if auto_direction == "UP":
             rotate_auto = auto_tank
-        elif direction == "DOWN":
+        elif auto_direction == "DOWN":
             rotate_auto = pygame.transform.rotate(auto_tank, 180)
-        elif direction == "LEFT":
+        elif auto_direction == "LEFT":
             rotate_auto = pygame.transform.rotate(auto_tank, 90)
-        elif direction == "RIGHT":
+        elif auto_direction == "RIGHT":
             rotate_auto = pygame.transform.rotate(auto_tank, -90)
-
         for bullet in bullets[:]:
             bullet.update()
             if bullet.rect.colliderect(auto_rect):
@@ -500,13 +529,17 @@ while game:
                 print("🎉 Гру пройдено!")
                 game = False
                 continue
+        
 
 
-
+        
         if auto_health <= 0:
             print("Ворог знищений!")
             current_level_index += 1
-            load_level = True  
+            if current_level_index + 1 > max_level_unlocked:
+                max_level_unlocked = current_level_index + 1
+                save_progress(crystal_count, max_level_unlocked)
+            load_level = True 
         for bullet in auto_bullets[:]:
             bullet.update()
             if bullet.rect.colliderect(player_rect):
@@ -529,18 +562,23 @@ while game:
         screen.blit(rotate_tank, player_rect)
         screen.blit(rotate_auto,auto_rect)
 
-        if auto_rect.y < player_rect.y:
-            auto_rect.y += 1
-            auto_direction = "DOWN"
-        elif auto_rect.y > player_rect.y:
-            auto_rect.y -= 1
-            auto_direction = "UP"
-        elif auto_rect.x < player_rect.x:
-            auto_rect.x += 1
-            auto_direction = "RIGHT"
-        elif auto_rect.x > player_rect.x:
-            auto_rect.x -= 1
-            auto_direction = "LEFT"
+        dx = player_rect.centerx - auto_rect.centerx
+        dy = player_rect.centery - auto_rect.centery
+
+        if abs(dx) > abs(dy):
+            if dx > 0:
+                auto_rect.x += 1
+                auto_direction = "RIGHT"
+            else:
+                auto_rect.x -= 1
+                auto_direction = "LEFT"
+        else:
+            if dy > 0:
+                auto_rect.y += 1
+                auto_direction = "DOWN"
+            else:
+                auto_rect.y -= 1
+                auto_direction = "UP"
 
 
         auto_shoot_timer += 1
