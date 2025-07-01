@@ -287,33 +287,39 @@ skin_menu = False
 level_locked_message = ""
 message_timer = 0
 game = True
-while game: 
-    clock.tick(60)  
+while game:
+    clock.tick(60)
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             game = False
+        
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mouse_pos = event.pos
-
+            
             if skin_menu:
                 if back_rect.collidepoint(mouse_pos):
                     skin_menu = False
-                    menu = True
+                    menu = True 
                 else:
                     for i, rect in enumerate(skin_rects):
                         if rect.collidepoint(mouse_pos):
                             if i in purchased_skins:
                                 selected_skin_id = i
+                                player_tank = pygame.image.load(skin_paths[selected_skin_id]).convert_alpha()
+                                player_tank = pygame.transform.scale(player_tank, (64, 64))
                                 save_progress(crystal_count, max_level_unlocked, selected_skin_id, purchased_skins)
                             else:
+
                                 if crystal_count >= skin_prices[i]:
                                     crystal_count -= skin_prices[i]
                                     purchased_skins.append(i)
                                     selected_skin_id = i
+                                    player_tank = pygame.image.load(skin_paths[selected_skin_id]).convert_alpha()
+                                    player_tank = pygame.transform.scale(player_tank, (64, 64))
                                     save_progress(crystal_count, max_level_unlocked, selected_skin_id, purchased_skins)
 
-            if menu:
-
+            elif menu:
                 if play_rect.collidepoint(mouse_pos):
                     pygame.mixer.music.stop()
                     menu = False
@@ -323,29 +329,23 @@ while game:
                     setting_menu = True
                 elif skin_rect.collidepoint(mouse_pos):
                     menu = False
-                    skin_menu = True 
+                    skin_menu = True
                 elif chest_rect.collidepoint(mouse_pos):
                     chest_open_sound.play()
-                    gained_crystals = random.randint(1, 10) 
+                    gained_crystals = random.randint(1, 10)
                     crystal_count += gained_crystals
-                    save_progress(crystal_count, max_level_unlocked)
+                    save_progress(crystal_count, max_level_unlocked, selected_skin_id, purchased_skins)
                     print(f"Випало {gained_crystals} кристалів! Всього: {crystal_count}")
                 elif back_rect.collidepoint(mouse_pos):
                     setting_menu = False
                     menu = True
-            elif back_rect.collidepoint(mouse_pos):
-                    skin_menu = False
+            
+            elif setting_menu:
+                if back_rect.collidepoint(mouse_pos):
+                    setting_menu = False
                     menu = True
 
             elif show_level_select:
-                if level_locked_message:
-                    now = pygame.time.get_ticks()
-                    if now - message_timer < 2000:  # 2 секунди
-                        font = pygame.font.SysFont("arial", 32)
-                        msg = font.render(level_locked_message, True, (255, 0, 0))
-                        screen.blit(msg, (WIDTH // 2 - msg.get_width() // 2, HEIGHT - 80))
-                    else:
-                        level_locked_message = ""
                 for i, rect in enumerate(level_buttons):
                     if rect.collidepoint(mouse_pos):
                         if i + 1 > max_level_unlocked:
@@ -357,22 +357,24 @@ while game:
                             show_level_select = False
                             menu = False
                             print(f"Завантажено карту рівня {current_level_index + 1}")
-            else:
+
+            else:  # Гра
                 if exit_rect.collidepoint(mouse_pos):
                     menu = True
                     current_tile_map = None
                     show_level_select = False
                     bullets.clear()
 
-
-
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                bullet_x, bullet_y = get_bullet_spawn(player_rect, direction)
-                new_bullet = Bullet(bullet_x, bullet_y, direction)
-                bullets.append(new_bullet)
-                shoot_channel.play(shoot_sound)
+            if not menu and not skin_menu and not setting_menu and not show_level_select:
+                if event.key == pygame.K_SPACE:
+                    bullet_x, bullet_y = get_bullet_spawn(player_rect, direction)
+                    new_bullet = Bullet(bullet_x, bullet_y, direction)
+                    bullets.append(new_bullet)
+                    shoot_channel.play(shoot_sound)
 
+
+    # --- ВІЗУАЛ --- #
 
     if menu:
         screen.blit(background_img, (0, 0))
@@ -381,7 +383,6 @@ while game:
         screen.blit(setting_img, setting_rect)
         screen.blit(chest_img, chest_rect)
         screen.blit(crystal_img, (10, 10))
-
         font = pygame.font.SysFont("arial", 28)
         crystal_text = font.render(str(crystal_count), True, (255, 255, 255))
         screen.blit(crystal_text, (10 + crystal_img.get_width() + 5, 12))
@@ -390,44 +391,12 @@ while game:
             pygame.mixer.music.set_volume(0.5)
             pygame.mixer.music.play(-1)
 
-    elif setting_menu:
-        screen.fill((50, 50, 70))  
-
-        font = pygame.font.SysFont("arial", 36)
-        small_font = pygame.font.SysFont("arial", 28)
-
-        settings_text = font.render("Налаштування", True, (255, 255, 255))
-        screen.blit(settings_text, (WIDTH // 2 - settings_text.get_width() // 2, 50))
-
-        pygame.draw.rect(screen, (200, 200, 200), (slider_x, slider_y, slider_width, slider_height))
-        
-        knob_x = slider_x + int(volume * slider_width)
-        pygame.draw.circle(screen, (255, 0, 0), (knob_x, slider_y + slider_height // 2), 12)
-
-        volume_text = small_font.render("Гучність музики", True, (255, 255, 255))
-        screen.blit(volume_text, (slider_x, slider_y - 40))
-
-        back_text = small_font.render("← Назад", True, (255, 255, 255))
-        back_rect = back_text.get_rect(topleft=(50, HEIGHT - 70))
-        screen.blit(back_text, back_rect)
-
-        lang_text = small_font.render("Мова: [UA] [EN] [PL]", True, (200, 200, 200))
-        screen.blit(lang_text, (slider_x, slider_y + 80))
-    elif show_level_select:
-        screen.blit(level_select_bg, (0, 0))
-        for i, rect in enumerate(level_buttons):
-            if i < len(level_images):
-                screen.blit(level_images[i], rect.topleft)
     elif skin_menu:
         screen.fill((40, 40, 60))
         title = pygame.font.SysFont("arial", 48).render("Скіни", True, (255, 215, 0))
         screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 50))
-
         for i, rect in enumerate(skin_rects):
             screen.blit(skin_images[i], rect)
-
-            # Клік миші буде перевірятимо у подіях, а не тут
-            # Але можна показувати кнопку (купити/обрати)
             status_font = pygame.font.SysFont("arial", 22)
             if i in purchased_skins:
                 if selected_skin_id == i:
@@ -438,16 +407,48 @@ while game:
                 status_text = status_font.render(f"Купити ({skin_prices[i]})", True, (255, 100, 100))
             screen.blit(status_text, (rect.centerx - status_text.get_width() // 2, rect.bottom + 10))
 
-        # кнопка Назад
         back_text = small_font.render("← Назад", True, (255, 255, 255))
         back_rect = back_text.get_rect(topleft=(50, HEIGHT - 70))
         screen.blit(back_text, back_rect)
 
+    elif setting_menu:
+        screen.fill((50, 50, 70))
+        font = pygame.font.SysFont("arial", 36)
+        small_font = pygame.font.SysFont("arial", 28)
+        settings_text = font.render("Налаштування", True, (255, 255, 255))
+        screen.blit(settings_text, (WIDTH // 2 - settings_text.get_width() // 2, 50))
+        pygame.draw.rect(screen, (200, 200, 200), (slider_x, slider_y, slider_width, slider_height))
+        knob_x = slider_x + int(volume * slider_width)
+        pygame.draw.circle(screen, (255, 0, 0), (knob_x, slider_y + slider_height // 2), 12)
+        volume_text = small_font.render("Гучність музики", True, (255, 255, 255))
+        screen.blit(volume_text, (slider_x, slider_y - 40))
+        back_text = small_font.render("← Назад", True, (255, 255, 255))
+        back_rect = back_text.get_rect(topleft=(50, HEIGHT - 70))
+        screen.blit(back_text, back_rect)
+        lang_text = small_font.render("Мова: [UA] [EN] [PL]", True, (200, 200, 200))
+        screen.blit(lang_text, (slider_x, slider_y + 80))
 
+    elif show_level_select:
+        screen.blit(level_select_bg, (0, 0))
+        for i, rect in enumerate(level_buttons):
+            if i < len(level_images):
+                screen.blit(level_images[i], rect.topleft)
+
+        # Виведення повідомлення, якщо рівень заблоковано
+        if level_locked_message:
+            now = pygame.time.get_ticks()
+            if now - message_timer < 2000:  # 2 секунди
+                font = pygame.font.SysFont("arial", 32)
+                msg = font.render(level_locked_message, True, (255, 0, 0))
+                screen.blit(msg, (WIDTH // 2 - msg.get_width() // 2, HEIGHT - 80))
+            else:
+                level_locked_message = ""
+
+    else:
+        # Ігровий процес — рух, стрільба, оновлення рівня
 
         keys = pygame.key.get_pressed()
         moving = False
-
         if keys[pygame.K_UP] and player_rect.top - tank_speed >= 0:
             player_rect.y -= tank_speed
             direction = "UP"
@@ -465,8 +466,6 @@ while game:
             direction = "RIGHT"
             moving = True
 
-
-        
         if moving:
             if not move_channel.get_busy():
                 move_channel.play(move_sound, loops=-1)
@@ -489,7 +488,6 @@ while game:
         elif direction == "RIGHT":
             rotate_tank = pygame.transform.rotate(player_tank, -90)
 
-
         if auto_direction == "UP":
             rotate_auto = auto_tank
         elif auto_direction == "DOWN":
@@ -498,6 +496,8 @@ while game:
             rotate_auto = pygame.transform.rotate(auto_tank, 90)
         elif auto_direction == "RIGHT":
             rotate_auto = pygame.transform.rotate(auto_tank, -90)
+
+        # Оновлення та малювання куль гравця
         for bullet in bullets[:]:
             bullet.update()
             if bullet.rect.colliderect(auto_rect):
@@ -505,15 +505,16 @@ while game:
                 bullets.remove(bullet)
                 hit_sound.play()
                 auto_health -= 1
-                print(f"Здоров'я гравця: {auto_health}")
+                print(f"Здоров'я ворога: {auto_health}")
                 if auto_health <= 0:
-                 print("Ворог знищений!")
+                    print("Ворог знищений!")
             elif (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
-                bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
+                  bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
                 bullets.remove(bullet)
             else:
                 bullet.draw(screen)
 
+        # Завантаження рівня
         if load_level:
             if current_level_index < len(tile_maps):
                 current_tile_map = tile_maps[current_level_index]
@@ -529,17 +530,16 @@ while game:
                 print("🎉 Гру пройдено!")
                 game = False
                 continue
-        
 
-
-        
+        # Перевірка перемоги
         if auto_health <= 0:
-            print("Ворог знищений!")
             current_level_index += 1
             if current_level_index + 1 > max_level_unlocked:
                 max_level_unlocked = current_level_index + 1
-                save_progress(crystal_count, max_level_unlocked)
-            load_level = True 
+                save_progress(crystal_count, max_level_unlocked, selected_skin_id, purchased_skins)
+            load_level = True
+
+        # Оновлення та малювання куль ворога
         for bullet in auto_bullets[:]:
             bullet.update()
             if bullet.rect.colliderect(player_rect):
@@ -549,18 +549,17 @@ while game:
                 player_health -= 1
                 print(f"Здоров'я гравця: {player_health}")
                 if player_health <= 0:
-                    print(" Гравець програв!")
+                    print("Гравець програв!")
                     game = False
             elif (bullet.rect.right < 0 or bullet.rect.left > WIDTH or
-                bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
+                  bullet.rect.bottom < 0 or bullet.rect.top > HEIGHT):
                 auto_bullets.remove(bullet)
             else:
                 bullet.draw(screen)
 
-
-        screen.blit(exit_img,exit_rect)
+        screen.blit(exit_img, exit_rect)
         screen.blit(rotate_tank, player_rect)
-        screen.blit(rotate_auto,auto_rect)
+        screen.blit(rotate_auto, auto_rect)
 
         dx = player_rect.centerx - auto_rect.centerx
         dy = player_rect.centery - auto_rect.centery
@@ -579,7 +578,6 @@ while game:
             else:
                 auto_rect.y -= 1
                 auto_direction = "UP"
-
 
         auto_shoot_timer += 1
         if auto_shoot_timer >= ENEMY_SHOOT_INTERVAL:
